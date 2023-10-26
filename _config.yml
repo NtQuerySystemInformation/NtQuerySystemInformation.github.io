@@ -1,4 +1,4 @@
-title: REV_UWU_GANG layer
+title: A weeb reverser layer.
 author:
   name: Asatistic
   email: ¯\_(ツ)_/¯
@@ -18,11 +18,8 @@ minima:
       - { platform: github,         user_url: "https://github.com/NtQuerySystemInformation" }
       - { platform: twitter,        user_url: "https://twitter.com/kasua02" } 
 
-# If you want to link only specific pages in your header, uncomment this and add the path to the pages in
-# order as they should show up.
-#
-# header_pages:
-#   - about.md
+header_pages:
+   - about.md
 
 # Set to `true` to show excerpts on the homepage.
 #
