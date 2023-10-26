@@ -1,16 +1,12 @@
-title: Your awesome title
+title: Rev_uwu_gang layer
 author:
-  name: GitHub User
-  email: your-email@domain.com
+  name: Asatistic
+  email: ¯\_(ツ)_/¯
 
 # The `>` after `description:` means to ignore line-breaks until next key.
 # If you want to omit the line-break after the end of text, use `>-` instead.
 description: >
-  Write an awesome description for your new site here. You can edit this line
-  in _config.yml. It will appear in your document head meta (for Google search
-  results) and in your feed.xml site description.
-
-# Build settings
+  A weeb reverser, exploring weird things.
 
 theme: minima
 
@@ -19,21 +15,21 @@ plugins:
   - jekyll-seo-tag
 
 # Theme-specific settings
+# Minima date format.
+# Refer to https://shopify.github.io/liquid/filters/date/ if you want to customize this.
+#
 
 minima:
-  # Minima date format.
-  # Refer to https://shopify.github.io/liquid/filters/date/ if you want to customize this.
-  #
-  # date_format: "%b %-d, %Y"
-
-  # Generate social links in footer.
-  #
-  # social_links:
+  skin: dark    
+  date_format: "%b %-d, %Y"
+  social_links:
   #   - { platform: devto,          user_url: "https://dev.to/jekyll" }
   #   - { platform: dribbble,       user_url: "https://dribbble.com/jekyll" }
   #   - { platform: facebook,       user_url: "https://www.facebook.com/jekyll" }
   #   - { platform: flickr,         user_url: "https://www.flickr.com/photos/jekyll" }
-  #   - { platform: github,         user_url: "https://github.com/jekyll/minima" }
+      - { platform: github,         user_url: "https://github.com/NtQuerySystemInformation" }
+      - { platform: x,              user_url: "https://x.com/kasua02" }
+      - { platform: twitter,        user_url: "https://twitter.com/kasua02" }
   #   - { platform: google_scholar, user_url: "https://scholar.google.com/citations?user=qc6CJjYAAAAJ" }
   #   - { platform: instagram,      user_url: "https://www.instagram.com/jekyll" }
   #   - { platform: keybase,        user_url: "https://keybase.io/jekyll" }
