@@ -9,4 +9,4 @@ of the things I poke around.
 
 Currently I am quite interested in windows internals and obfuscation. I will show my progress on these topics as I have the time. 
 
-<img src="/assets/images/autisticgang.jpg" width="500" height="500"/>
+<img src="/assets/images/autisticgang.jpg" width="500" height="500" />
