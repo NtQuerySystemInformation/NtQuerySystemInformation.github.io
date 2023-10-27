@@ -8,4 +8,5 @@ Hey! I am mainly doing reversing for fun, usually I am not that active in social
 of the things I poke around.
 
 Currently I am quite interested in windows internals and obfuscation. I will show my progress on these topics as I have the time. 
-![My live representation](/assets/autistic_gang.jpg)
+
+![My live representation](/assets/images/autistic_gang.jpg)
