@@ -10,5 +10,4 @@ uint32_t main(void){
 	std::cout << "rev_uwu_gang" << std::endl;
 	return EXIT_SUCCESS;
 }
-#=> This prints random garbage :p
 {% endhighlight %}
