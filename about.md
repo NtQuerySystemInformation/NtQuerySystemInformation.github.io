@@ -9,4 +9,4 @@ of the things I poke around.
 
 Currently I am quite interested in windows internals and obfuscation. I will show my progress on these topics as I have the time. 
 
-![My live representation](/assets/images/autistic_gang.jpg)
+![](/assets/images/autistic_gang.jpg =500x500)
