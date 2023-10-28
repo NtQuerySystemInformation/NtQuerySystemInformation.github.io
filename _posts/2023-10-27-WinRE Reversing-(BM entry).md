@@ -503,12 +503,11 @@ Similarly, it can be pointed out that there is also constraints related to restr
 
 **So what is a simple solution to this problem with the mentioned constraints?**
 
-Simple, an old fashioned dll hijacking payload, particularly one that was reliable (a binary that is guaranteed to be loaded after the reinstallation, inside the system root directory 
-“Drive Letter:\Windows” .)
+Simple, an old fashioned dll hijacking payload, particularly one that was reliable (a binary that is guaranteed to be loaded after the reinstallation, inside the system root directory “Drive Letter:\Windows”.)
 
 Of course there are possibly other ways to achieve code execution by having access to this particular directory, but for this specific PoC, this was the main route that I took.
 
-Staying on topic, there are a lot of such DLLs that could be used for this precise purpose, but the one I decided to pick up as an example was cscapi.dll, used by explorer.exe.
+Staying on topic, there are a lot of such DLLs that could be used for this precise purpose, but the one I decided to pick up as an example was `cscapi.dll`, used by `explorer.exe`.
 (Special thanks to dodo for pointing me out to this dll). 
 
 I specially crafted some simple dll that spawned a shell, some `ResetConfig.xml` and of course, the script to be executed which triggers the migration of the payload as well, all stored inside `Recovery\OEM`.
@@ -520,4 +519,4 @@ The payload testing phase was quite interesting, but to put it briefly, it is re
 Finally, all of this can actually be figured out by just looking at MSDN documentation regarding ResetConfig.xml and Push-Button Reset related information, which is what I initially started to do before working on the actual reversing process to understand particular undocumented things from this environment to interact better with the result recovered OS.
 
 The basic strategy was:
-“Poking around things until something particular interesting appears”.
+`“Poking around things until something particular interesting appears”.`
