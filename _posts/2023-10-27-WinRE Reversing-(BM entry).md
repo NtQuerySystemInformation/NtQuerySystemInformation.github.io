@@ -130,7 +130,7 @@ On the other hand, the Operation objects are queued to the `OperationQueue` than
 dwResult = OperationQueue::Create(OperationQueueOffline); 
 if ( dwResult >= 0 ){
 	dwResult = OperationQueue::Create(OperationQueueOnline); 
-if ( dwResult >= 0 ){
+	if ( dwResult >= 0 ){
 		vtableDerivedScenario = DerivedScenarioObj->vTableScenario; //Overridden by derived type.
 		dwResult = vtableDerivedScenario->InternalConstruct(DerivedScenarioObj, ExecStatePtr, OperationQueueOffline,  OperationQueueOnline);
 		if ( dwResult >= 0 ){
@@ -188,7 +188,7 @@ dwResult = (DerivedOpObj->VtableOperation->InternalExecute)(DerivedOpObj, ExecSt
 DerivedOpObj->m_SessionObj = 0i64;
 DerivedOpObj->m_TelemetryObjPtr = 0i64;
 if( dwResult >= 0 ) {
-		DerivedOperation->m_ExecutedProperty.bCheck = 1;
+	DerivedOperation->m_ExecutedProperty.bCheck = 1;
 } else{
 	Logging::TraceErr(2i64, dwResult, "PushButtonReset::Operation::Execute", "base\\reset\\engine\\exec\\src\\operation.cpp", 580, L"Internal failure in subtype execution routine");
 }
@@ -327,14 +327,14 @@ if (Directory::Exists(&OldRecOemPath) && !Directory::Exists(&NewRecOemPath))
 Path::GetDirectory(NewOsRecoveryOemPath, &ParentDirRecovery);
 if ( Directory::Exists(&ParentDirRecovery))
 {
-		Path::GetShortName(OldOsRecoveryOemPath, &ShortNameRecOemPath);
-			Path::GetCanonical(OldOsRecoveryOemPath, &CanonicalRecOemPathOld);
-		Path::GetCanonical(NewOsRecoveryOemPath, &CanonicalRecOemPathNew);
-		dwFlags = !argFlag; 
-		if( MoveFileExW(CanonicalRecOemPathOld, CanonicalRecOemPathNew, dwFlags))
-		{
-			if (ADJ(ShortNameRecOemPath.m_pchData)->nDataLength > 0) {
-				Path::SetShortName(NewOsRecoveryOemPath, &ShortNameRecOemPath);
+	Path::GetShortName(OldOsRecoveryOemPath, &ShortNameRecOemPath);
+	Path::GetCanonical(OldOsRecoveryOemPath, &CanonicalRecOemPathOld);
+	Path::GetCanonical(NewOsRecoveryOemPath, &CanonicalRecOemPathNew);
+	dwFlags = !argFlag; 
+	if( MoveFileExW(CanonicalRecOemPathOld, CanonicalRecOemPathNew, dwFlags))
+	{
+		if (ADJ(ShortNameRecOemPath.m_pchData)->nDataLength > 0) {
+			Path::SetShortName(NewOsRecoveryOemPath, &ShortNameRecOemPath);
 		}
 	}
 }
@@ -391,25 +391,25 @@ During the execution of `ResetScenario’s DoConstruct/InternalConstruct methods
 {% highlight cpp %}
 if ( Extensibility::HasCommandFor(ExtensibilityObjectPtr, 3u) //Reset End phase checks.
 {
-	   Logging::Trace(0, L"Reset: OEM extension is available for ResetEnd");
-	   Extensibility::GetCommand(ExtensibilityObjPointer, 3u, &ExtensibilityDir, &ScriptPath, &Arguments, &dwSeconds);
-	   ArgsString = PayloadInfo::GetImage(&Arguments);
-	   ScriptPath = PayloadInfo::GetImage(&ScriptPath);
-	   OemFolderPath = PayloadInfo::GetImage(&ExtensibilityDir);
-	   Logging::Trace(0, L"Reset: OEM extension command defined in [%s] for phase 2 is [%s] [%s] ([%u] seconds)", OemFolderPath, ScriptPath, ArgsString, (DWORD)dwSeconds);
-	   ATL::CStringW(&OperationNameStr, L"RunExtension");
-	   Operation::Create(&OperationNameStr, OpRunExtensionObjPtr);
-	   BoolProperty::operator=(&OpRunExtensionObjPtr->m_IsRequired, 0i64);
-	   ATL::CStringW(&m_PhaseExec, L"ResetEnd");
-	   PathProperty::operator=(&OpRunExtensionObjPtr->m_PhaseExecution, &m_PhaseExec);
-	   PathProperty::operator=(&OpRunExtensionObjPtr->m_ExtensibilityDir, &ExtensibilityDir);
-	   PathProperty::operator=(&OpRunExtensionObjPtr->m_CommandPath, &ScriptPath);
-	   PathProperty::operator=(&OpRunExtensionObjPtr->m_Arguments, &Arguments);
-	   IntProperty::operator=(&OpRunExtensionObjPtr->m_Duration, dwDurationSeconds);
-	   IntProperty::operator=(&OpRunExtensionObjPtr->m_Timeout, 3600);
-	   BoolProperty::operator=(&OpRunExtensionObjPtr->m_WipeDataCheck, 0i64);
-	   BoolProperty::operator=(&OpRunExtensionObjPtr->m_PartitionDiskCheck, 0i64);
-	   OperationQueue::Enqueue(OperationQueueOffline, OpRunExtensionObjPtr);
+   Logging::Trace(0, L"Reset: OEM extension is available for ResetEnd");
+   Extensibility::GetCommand(ExtensibilityObjPointer, 3u, &ExtensibilityDir, &ScriptPath, &Arguments, &dwSeconds);
+   ArgsString = PayloadInfo::GetImage(&Arguments);
+   ScriptPath = PayloadInfo::GetImage(&ScriptPath);
+   OemFolderPath = PayloadInfo::GetImage(&ExtensibilityDir);
+   Logging::Trace(0, L"Reset: OEM extension command defined in [%s] for phase 2 is [%s] [%s] ([%u] seconds)", OemFolderPath, ScriptPath, ArgsString, (DWORD)dwSeconds);
+   ATL::CStringW(&OperationNameStr, L"RunExtension");
+   Operation::Create(&OperationNameStr, OpRunExtensionObjPtr);
+   BoolProperty::operator=(&OpRunExtensionObjPtr->m_IsRequired, 0i64);
+   ATL::CStringW(&m_PhaseExec, L"ResetEnd");
+   PathProperty::operator=(&OpRunExtensionObjPtr->m_PhaseExecution, &m_PhaseExec);
+   PathProperty::operator=(&OpRunExtensionObjPtr->m_ExtensibilityDir, &ExtensibilityDir);
+   PathProperty::operator=(&OpRunExtensionObjPtr->m_CommandPath, &ScriptPath);
+   PathProperty::operator=(&OpRunExtensionObjPtr->m_Arguments, &Arguments);
+   IntProperty::operator=(&OpRunExtensionObjPtr->m_Duration, dwDurationSeconds);
+   IntProperty::operator=(&OpRunExtensionObjPtr->m_Timeout, 3600);
+   BoolProperty::operator=(&OpRunExtensionObjPtr->m_WipeDataCheck, 0i64);
+   BoolProperty::operator=(&OpRunExtensionObjPtr->m_PartitionDiskCheck, 0i64);
+   OperationQueue::Enqueue(OperationQueueOffline, OpRunExtensionObjPtr);
 }
 
 //Excerpt: Optimized ResetScenario::DoConstruct snippet to understand OpRunExtension member initialization.
@@ -448,26 +448,26 @@ Logging::Trace(0, L"RunExtension: About to execute [%s]", ScriptFileName.m_pchDa
 (...)
 dwResultCode = Command::Execute(&ScriptFileName, unused_arg, CommandObjPointer);
 if ( dwResultCode >= 0 ){
-		dwCodeResult = Command::Wait(CommandObjPtr,this->m_Timeout.m_int_for_property);
-		if ( dwCodeResult < 0 ){
-			dwResultCode = 0x800705B4;
-			if ( dwCodeResult == 0x800705B4 ){
-				Logging::Trace(1u, L"RunExtension: The command timed out");
-				Command::Cancel(pCommandObj);
-				//(...)
-				Logging::Trace(1u, L"RunExtension: The command was terminated");
+	dwCodeResult = Command::Wait(CommandObjPtr,this->m_Timeout.m_int_for_property);
+	if ( dwCodeResult < 0 ){
+		dwResultCode = 0x800705B4;
+		if ( dwCodeResult == 0x800705B4 ){
+			Logging::Trace(1u, L"RunExtension: The command timed out");
+			Command::Cancel(pCommandObj);
+			//(...)
+			Logging::Trace(1u, L"RunExtension: The command was terminated");
+		}
+	}
+	else{
+		Logging::Trace(0, L"RunExtension: The command completed");
+		dwErrorCode = 0;
+		dwResultCode = Command::GetExitCode(CommandObj, &dwErrorCode);
+		if (dwResultCode >= 0){
+			if ( dwErrorCode ){
+				Logging::Trace(0, L"RunExtension: The command failed: Exit Code: [%u]", dwErrorCode);
 			}
 		}
-		else{
-			Logging::Trace(0, L"RunExtension: The command completed");
-			dwErrorCode = 0;
-			dwResultCode = Command::GetExitCode(CommandObj, &dwErrorCode);
-			if (dwResultCode >= 0){
-				if ( dwErrorCode ){
-					Logging::Trace(0, L"RunExtension: The command failed: Exit Code: [%u]", dwErrorCode);
-				}
-			}
-		}
+	}
 }	
 //Excerpt: Optimized OpRunExtension::RunCommand for overall execution flow.
 {% endhighlight %}
