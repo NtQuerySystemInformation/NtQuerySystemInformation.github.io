@@ -27,6 +27,7 @@ If you want to see some of my rebuilded structures/classes so you can continue r
 WinRE is, in informal terms, a “small” Windows OS (a.k.a WinPE) which is stored in a WIM disk image file inside a partition which is meant to boot up from it when your core OS is malfunctioning.  
   
 In terms of the WIM file used for storing it, there is native windows binaries for manipulating it such as DISM so coding one parser is not necessary for modifying or extracting the different executables as needed. For further technical details refer to the references section.  
+  
 Describing the entire internals of this environment (WinPE variant) is not the main objective of this paper. Instead we will focus on describing how the different recovery options are selected under the hood, and the most important interactions with the recovered OS that can lead to surviving reset (where you will see it is incredibly easy in the default configuration).
 However, the core question arises: How do you find the core binaries involved in this process?  
   
@@ -68,6 +69,7 @@ I have to say the results were very interesting, as you can see by some of the s
 I want to point out an additional aspect that helped me out analyze statically the execution flow, and that I found later on: Log files.They contain a lot of the details of the execution environment that are stored at the end of the whole recovery process inside a folder named `$SysReset`, where each subdirectory has relevant information.  
    
 In this sense, I only used mainly two file logs from this directory: `Logs/setuperr.log` and `Logs/setupact.log`.  
+  
 The main functions for logging to these files are `Logging::Trace` or `Logging::TraceErr`.
 For this work, it was specially used setupact.log for debugging some of my payload script issues and mapping different blocks of code that were executed, which aid at getting a better big picture of the whole process.  
   
@@ -121,6 +123,7 @@ struct __cppobj DerivedScenario : Scenario
 {% endhighlight %}
 
 Describing further the functionality inside `ResetPrepareSession`, the method `Session::Construct` stands out by calling `Scenario::Create` and `Scenario::Initialize`, these methods will create a different derived `Scenario` object, where there is a maximum of 13 types, being the one that matters the most to us, `ResetScenario`.  
+  
 Additionally, the vtable from the base class is replaced with the one from the derived class type, effectively overriding it for functionality specifics of that case. 
 Most derived scenarios have the same size, however, for the bare metal scenario cases, additional disk info information members are added.
 
@@ -144,7 +147,8 @@ if ( dwResult >= 0 ){
 {% endhighlight %}
 
 The `InternalConstruct` method redirects to an internal `DoConstruct` function.   
-Inside of this function, `Operation::Create`, passes a `CStringW` which is highlighted by the code as the `OperationTypeID` member used as a key to an `CAtlMap<CStringW, struct OperationMetadata>`.   
+Inside of this function, `Operation::Create`, passes a `CStringW` which is highlighted by the code as the `OperationTypeID` member used as a key to an `CAtlMap<CStringW, struct OperationMetadata>`.  
+   
 Specifically, once the specific type is found, the derived Operation is built calling `OperationMetadata m_FactoryMethod` member, which is basically a `DerivedOperation` constructor.
 
 {% highlight cpp %}
