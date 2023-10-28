@@ -35,7 +35,7 @@ This did not yield any results until I found the following image with an excepti
 
 <br>
 <div style="text-align:center;">
-  <img src="/assets/images/img1.png" width="500" height="500" alt="Interesting exception." />
+  <img src="/assets/images/img1.png">
 </div>
 <br>
 
@@ -47,16 +47,16 @@ The easiest way to approach it was using the WinRE command prompt and create a p
 I have to say the results were very interesting, as you can see by some of the screenshots below, which matched with the type of result I was expecting and I was interested in.
 
 <div style="text-align:center;">
-  <img src="/assets/images/img2.png" width="500" height="500"/>
+  <img src="/assets/images/img2.png">
 </div>
 
 <div style="text-align:center;">
-  <img src="/assets/images/img3.png" width="500" height="500"/>
+  <img src="/assets/images/img3.png">
 </div>
 
 <br>
 <div style="text-align:center;">
-  <img src="/assets/images/img4.png" width="500" height="500" alt="Main debugging trace."/>
+  <img src="/assets/images/img4.png" alt="Main debugging trace.">
 </div>   
 <br>
  
@@ -81,7 +81,6 @@ In this sense, the engine core execution process can be described from this poin
 The reason is the manipulation of an object named `Session`, which members are of huge interest for further understanding how the engine prepares itself for executing the different options available.
 
 {% highlight cpp %}
-
 	struct Session
 	{
 		CAtlArray m_arrayProperties;
@@ -99,14 +98,12 @@ The reason is the manipulation of an object named `Session`, which members are o
 		OperationQueue* m_OperationQueueOnlineOps; //Online operations
 		BYTE bytes_not_relevant_members2[12]; //not relevant for current context
 	}
-
 {% endhighlight %}
 
 The main reason for this is because this object contains a member of type `OperationQueue`, which is basically a typedef of `CAtlArray` for each operation object to be executed, tied to a particular derived `Scenario` type.  
 Such scenarios are initialized thanks to `ResetPrepareSession`, and each of their operations related to it are executed properly with `ResetExecute`.
 
 {% highlight cpp %}
-	
 	struct __cppobj DerivedScenario : Scenario 
 	{
 		void* m_Telemetry;
@@ -116,7 +113,6 @@ Such scenarios are initialized thanks to `ResetPrepareSession`, and each of thei
 		Options* m_OptionsObjPtr;
 		SystemInfo* m_SystemInfoPtr;
 	};
-	
 {% endhighlight %}
 
 Describing further the functionality inside `ResetPrepareSession`, the method `Session::Construct` stands out by calling `Scenario::Create` and `Scenario::Initialize`, these methods will create a different derived `Scenario` object, where there is a maximum of 13 types, being the one that matters the most to us, `ResetScenario`.  
@@ -126,7 +122,6 @@ Most derived scenarios have the same size, however, for the bare metal scenario 
 On the other hand, the Operation objects are queued to the `OperationQueue` thanks to the internal method per derived scenario type: `InternalConstruct`. It is important the results are applied for online and offline operations. This method is also in charge of initializing the `ExecState` object, which will see later on how it is relevant for our reverse engineering effort.
 
 {% highlight cpp %}
-	
 	dwResult = OperationQueue::Create(OperationQueueOffline); 
 	if ( dwResult >= 0 ){
 		dwResult = OperationQueue::Create(OperationQueueOnline); 
@@ -141,7 +136,6 @@ On the other hand, the Operation objects are queued to the `OperationQueue` than
 	}
 	
 	//Excerpt: Code snippet per Scenario to build OperationQueue objects inside Scenario::Construct.	
-
 {% endhighlight %}
 
 The `InternalConstruct` method redirects to an internal `DoConstruct` function.   
@@ -149,7 +143,6 @@ Inside of this function, `Operation::Create`, passes a `CStringW` which is highl
 Specifically, once the specific type is found, the derived Operation is built calling `OperationMetadata m_FactoryMethod` member, which is basically a `DerivedOperation` constructor.
 
 {% highlight cpp %}
-	
 	struct OperationMetadata
 	{
 		CString m_OperationTypeID;			          //1.-ATL wchar_t container for operation type ID.
@@ -183,7 +176,6 @@ Below you can see the base Operation structure for each possible operation to be
 Regarding ResetExecute, the internal function `Session::ExecuteOffline` redirects to `Executer::Execute`, which eventually leads to each queued derived operation’s `InternalExecute` method.
 
 {% highlight cpp %}
-
 	PushButtonReset::Logging::Trace(0, L"Operation validity check passed, will execute");
 	DerivedOpObj->m_SessionObj = SessionObjCommands;
 	DerivedOpObj->m_TelemetryObjPtr = TelemetryObjPtr;
@@ -198,7 +190,6 @@ Regarding ResetExecute, the internal function `Session::ExecuteOffline` redirect
 	
 	//Excerpt: Code snippet showing InternalExecute per derived Operation inside Executer::Execute 
 	//(Notice how the members mainly passed as arguments to InternalExecute come from the base Operation type)
-
 {% endhighlight %}
 
 While there is other functions besides the ones just mentioned that are also involved in this process, I consider important to add only that there will also be a call to `Operation::ApplyEffects` after this code snippet, which basically executes the derived operation’s `InternalApply` method that may contain important initializations that will be used in the entire execution process, as it will be seen below.  
@@ -212,7 +203,6 @@ Talking more specifically about these members mentioned, it can be pointed out t
 However, at a certain point of execution all these members are set/used after the execution of one of the operations queued, specifically `OpExecSetup`, when the `InternalApply` method is called in the scheduled execution, as shown below.
 
 {% highlight cpp %}
-	
 	if (!ExecState->m_HaveOldOs.bCheck) //path mostly taken.
 	{ 
 		ATL::CStringW(&OldWindowsDir, L"Windows.old"); 
@@ -222,7 +212,6 @@ However, at a certain point of execution all these members are set/used after th
 	CStringW::operator=(&ExecState->m_NewOSRoot.CStringPath,&m_TargetVolumeRoot);
 	
 	//Excerpt: Setting up m_NewOsRoot and m_OldOsRoot after OpExecSetup InternalApply execution.
-	
 {% endhighlight %}
 
 **This raises the question: Why specifically this Windows.old subdirectory is set up for the m_OldOsRoot member?**
@@ -261,34 +250,32 @@ Once we have described exactly how operations and each scenario are constructed 
 In this sense, this method redirects to an internal function `ResetScenario::DoConstruct`, which will be adding the Operation struct using `OperationQueue::Enqueue`.  
 For this scenario, only the offline operation queue is set and the overall list of all the operations being executed can be seen below. (Remember that online operations are not set in this case).
 
-	<div style="text-align:center;">
-		Offline operation queue: 24 operations (CAtlArray)
-			0: Clear storage reserve (OpClearStorageReserve)
-			1: Delete OS uninstall image (OpDeleteUninstall).
-			2: Set remediation strategy: roll back to old OS (OpSetRemediationStrategy).
-			3: Set 'In-Progress' environment key (OpMarkInProgress).
-			4: Back up WinRE information (OpSaveWinRE)
-			5: Archive user data files (OpArchiveUserData)
-			6: Reconstruct Windows from packages (OpExecSetup)
-			7: Save flighted build number to new OS (OpSaveFlight)
-			8: Persist install type in new OS registry (OpSetInstallType)
-			9: Notify OOBE not to prompt for a product key (OpSkipProductKeyPrompt)
-			10: Migrate setting-related files and registry data (OpMigrateSettings)
-			11: Migrate AppX Provisioned Apps (OpMigrateProvisionedApps)
-			12: Migrate OEM PBR extensions (OpMigrateOEMExtensions)
-			13: Set 'In-Progress' environment key (OpMarkInProgress)
-			14: Restore boot manager settings (OpRestoreBootSettings)
-			15: Restore WinRE information (OpRestoreWinRE)
-			16: Install WinRE on target OS (OpInstallWinRE)
-			17: Execute OEM extensibility command (OpRunExtension)
-			18: Show data wipe warning, then continue (OpSetRemediationStrategy).
-			19: Delete user data files (OpDeleteUserData) 
-			20: Delete old OS files (OpDeleteOldOS).
-			21: Delete Encryption Opt-Out marker in OS volume (OpDeleteEncryptionOptOut):
-			22: Trigger WipeWarning remediation if a marker file is set (OpTriggerWipeWarning):
-			23: Set remediation strategy: ignore and continue (OpSetRemediationStrategy)
-    </div>
-	
+	Offline operation queue: 24 operations (CAtlArray)
+		0: Clear storage reserve (OpClearStorageReserve)
+		1: Delete OS uninstall image (OpDeleteUninstall).
+		2: Set remediation strategy: roll back to old OS (OpSetRemediationStrategy).
+		3: Set 'In-Progress' environment key (OpMarkInProgress).
+		4: Back up WinRE information (OpSaveWinRE)
+		5: Archive user data files (OpArchiveUserData)
+		6: Reconstruct Windows from packages (OpExecSetup)
+		7: Save flighted build number to new OS (OpSaveFlight)
+		8: Persist install type in new OS registry (OpSetInstallType)
+		9: Notify OOBE not to prompt for a product key (OpSkipProductKeyPrompt)
+		10: Migrate setting-related files and registry data (OpMigrateSettings)
+		11: Migrate AppX Provisioned Apps (OpMigrateProvisionedApps)
+		12: Migrate OEM PBR extensions (OpMigrateOEMExtensions)
+		13: Set 'In-Progress' environment key (OpMarkInProgress)
+		14: Restore boot manager settings (OpRestoreBootSettings)
+		15: Restore WinRE information (OpRestoreWinRE)
+		16: Install WinRE on target OS (OpInstallWinRE)
+		17: Execute OEM extensibility command (OpRunExtension)
+		18: Show data wipe warning, then continue (OpSetRemediationStrategy).
+		19: Delete user data files (OpDeleteUserData) 
+		20: Delete old OS files (OpDeleteOldOS).
+		21: Delete Encryption Opt-Out marker in OS volume (OpDeleteEncryptionOptOut):
+		22: Trigger WipeWarning remediation if a marker file is set (OpTriggerWipeWarning):
+		23: Set remediation strategy: ignore and continue (OpSetRemediationStrategy)
+ 	
 Now, we have to focus particularly on the specific operations that are more relevant to us, having in mind the execution order of the `OperationQueue` array that is being shown and our main objective, which is achieving any sort of filesystem persistence mechanism (surviving files and achieving code execution).
 
 The first thing I had to focus on while trying to survive in such an environment is finding where exceptions to deletion could be happening inside the construction of the Operation queue.
@@ -299,7 +286,6 @@ Because of this, I focused instead on operations related to migration, such as `
 At this point, we can say code speaks more than words, the optimized code snippet is shown below:  
 
 {% highlight cpp %}
-	
 	Path::Combine(&ExecState->m_OldOSRoot.CStringPath, L"Recovery", &OldOsRecoveryPath); //Creating Recovery folder path with Old Os argument
 	Path::Combine(&ExecState->m_NewOSRoot.CStringPath, L"Recovery", &NewOsRecoveryPath); //Creating Recovery folder path with New Os argument.
 	if (!Directory::Exists(&NewOsRecoveryPath))
@@ -315,13 +301,11 @@ At this point, we can say code speaks more than words, the optimized code snippe
 	PbrMigrateOEMProvPackages(TargetVolRoot, OldOsRoot, NewOsRoot); //Moving packages files.
 	PbrMigrateOEMScripts(TargetVolRoot, OldOsRoot, NewOsRoot); //Moving scripts, core target function.
 	PbrMigrateOEMAutoApply(TargetVolRoot, OldOsRoot, NewOsRoot); //Moving autoapply files.
-	
 {% endhighlight %}
 
 From all the functions that may be interesting, the one that interests me the most to cover is `PbrMigrateOEMScripts`. You might be asking why? It is pretty simple, this is the function that basically is in charge of moving files inside the `<DriveLetter>:\Recovery\OEM` folder from `OldOs (Windows.Old folder)`, to the `newOs (<DriveLetter>)`.
 
 {% highlight cpp %}
-	
 	Path::Combine(m_OldOsRoot, L"Recovery\\OEM", &OldRecOemPath);
 	Path::Combine(m_NewOsRoot,  L"Recovery\\OEM", &NewRecOemPath);
 	Logging::Trace(0, L"MigrateOEMExtensions: Migrating OEM scripts from [%s] to [%s]", OldRecOemPath.m_pchData, NewRecOemPath.m_pchData);
@@ -332,11 +316,9 @@ From all the functions that may be interesting, the one that interests me the mo
 	}
 	
 	//Excerpt: Optimized PbrMigrateOEMScripts snippet to move entire directory from old to new OS (with Directory::Move)
-	
 {% endhighlight %}
 
 {% highlight cpp %}
-
 	Path::GetDirectory(NewOsRecoveryOemPath, &ParentDirRecovery);
 	if ( Directory::Exists(&ParentDirRecovery))
 	{
@@ -353,7 +335,6 @@ From all the functions that may be interesting, the one that interests me the mo
 	}
 	
 	//Excerpt: Optimized Directory::Move snippet related to moving subdirectories and files.
-
 {% endhighlight %}
 
 This code effectively shows how the engine itself moves arbitrary files from the `“OldOS” (Windows.Old)` to the `“NewOS” (<DriveLetter>)`, as long as they are inside this folder: `Recovery\OEM`.
@@ -362,7 +343,6 @@ This however is not enough for achieving any sort of code execution to the targe
 This is where an additional Operation in the queue can be chained together for exactly this purpose: `OpRunExtension`.
 
 {% highlight cpp %}
-	
 	struct __cppobj OpRunExtension : Operation
 	{
 		BoolProperty m_IsRequired;
@@ -376,7 +356,6 @@ This is where an additional Operation in the queue can be chained together for e
 		BoolProperty m_WipeDataCheck;
 		BoolProperty m_PartitionDiskCheck;
 	};
-	
 {% endhighlight %}
 
 To show how exactly it matters to our intention, we have to look out for implementation details inside `OpRunExtension::InternalExecute`.
@@ -385,7 +364,6 @@ Mainly there are functions that are in charge of setting the necessary environme
 The latter is the most important function of this particular derived Operation in our context, but I will describe both
 
 {% highlight cpp %}
-
 	OpRunExtension::ExecuteCompatWorkarounds(RunExtensionObj);
 	dwCodeError = Path::Combine(&ExecStateObj->m_TargetVolumeRoot.CStringPath, L"Windows", &TargetWinDir);
 	if (dwCodeError >= 0){
@@ -395,7 +373,6 @@ The latter is the most important function of this particular derived Operation i
 	}
 	
 	//Excerpt: Optimized OpRunExtension::InternalExecute understanding the overall execution flow.
-
 {% endhighlight %}
 
 First, `OpRunExtension::SetEnvironmentalVariables` is not too important, but it’s core functionality is manipulating different registry values under `HKLM\SOFTWARE\Microsoft\RecoveryEnvironment`.
@@ -407,7 +384,6 @@ For this aspect, we have to explain particular things related to the `OpRunExten
 During the execution of `ResetScenario’s DoConstruct/InternalConstruct methods`, there are particular members that are initialized here, and most of them come from an object labeled as `“Extensibility”`
 
 {% highlight cpp %}
-
 	if ( Extensibility::HasCommandFor(ExtensibilityObjectPtr, 3u) //Reset End phase checks.
 	{
 		   Logging::Trace(0, L"Reset: OEM extension is available for ResetEnd");
@@ -432,7 +408,6 @@ During the execution of `ResetScenario’s DoConstruct/InternalConstruct methods
 	}
 	
 	//Excerpt: Optimized ResetScenario::DoConstruct snippet to understand OpRunExtension member initialization.
-	
 {% endhighlight %}
 
 To explain how this Extensibility object is initialized, we need to focus on the proper method used for this precise purpose and the members of classes involved in it.
@@ -441,7 +416,6 @@ The answer to this is simple, and it is basically inside `ResetScenario::Interna
 This is basically the path to `ResetConfig.xml`, which has to be stored in the `Recovery\OEM` directory from the `“OldOs”`.
 
 {% highlight cpp %}
-
 	StringInOemExtensibility=CStringW::CloneData(ResetScenarioObj->m_SystemInfoPtr->m_TargetOEMResetConfigPath.CString.m_pchData);
 	if ( StringInOemExtensibility->nDataLength > 0 ){
 		Logging::Trace(0, L"Reset: Loading OEM extensions");
@@ -449,7 +423,6 @@ This is basically the path to `ResetConfig.xml`, which has to be stored in the `
 		//(...)
 	}
 	//Excerpt: Optimized ResetScenario::InternalConstruct snippet, which shows the usage of the SystemInfo member, used for referring to the ResetConfig.xml path inside Extensibility::Load.
-
 {% endhighlight %}
 
 If we focus on this `ResetConfig.xml` file path and how it is used, we can say that reverse engineering the XML parsing itself is not particularly interesting, but in a brief description it can be said that this `Extensibility` object using the method `Extensibility::ParseCommand` with `XmlNode::GetAttribute` and `XmlNode::GetChildText`, checks for values that are documented here.  
@@ -462,7 +435,6 @@ However, while we know how to set up the environmental aspects of our payload so
 To answer this, after explaining some of the workings around the setup for core objects related to `OpRunExtension`, we have to return again to the `RunCommand` method, which builds a command line string with arguments.
 
 {% highlight cpp %}
-
 	PbrMountScriptDirectory(&this->m_ExtensibilityDir.CStringPath, &ScriptDirectory);
 	Logging::Trace(0, L"RunExtension: Resolved script directory [%s] to [%s]",  this->m_ExtensibilityDir.CStringPath.m_pchData, ScriptDirectory.m_pchData);
 	Path::Combine(&ScriptDirectory, &this->m_CommandPath.CStringMember, &ScriptFileCommand);
@@ -494,7 +466,6 @@ To answer this, after explaining some of the workings around the setup for core 
 	}
 	
 	//Excerpt: Optimized OpRunExtension::RunCommand for overall execution flow.
-	
 {% endhighlight %}
 
 If we inspect `Command::Execute`, the most important snippet of code that matters for our purposes is the following one:
