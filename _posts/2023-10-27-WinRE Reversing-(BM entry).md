@@ -4,7 +4,8 @@ title: "Reversing WinRE for fun (old work)"
 categories: rev
 ---
 
-**This is some work I did for Black Mass Volume 2. I wanted to fix some parts displayed in the original work so I decided to make this blog entry for posterity.**   
+**This is some work I did for Black Mass Volume 2. I wanted to fix some parts displayed in the original work so I decided to make this blog entry for posterity.**  
+   
 **Only the main body is presented here, if you want to see the complete article with some other cool ones, check the main book** [here](https://www.amazon.com/VX-Underground-Black-Mass-2/dp/B0CJBP84D4)
 
 # Why you shouldn’t trust the default WinRE local reinstall 
