@@ -104,7 +104,7 @@ struct Session
 	OperationQueue* m_OperationQueueOfflineOps; //Offline operations
 	OperationQueue* m_OperationQueueOnlineOps; //Online operations
 	BYTE bytes_not_relevant_members2[12]; //not relevant for current context
-}
+};
 {% endhighlight %}
 
 The main reason for this is because this object contains a member of type `OperationQueue`, which is basically a typedef of `CAtlArray` for each operation object to be executed, tied to a particular derived `Scenario` type.  
@@ -491,7 +491,8 @@ CreateProcessW(0i64, CommandLineOutput->m_pchData, 0i64, 0i64, 1, 0x8000000u, 0i
 
 {% endhighlight %}
 
-This is where the brainstorming started:   
+This is where the brainstorming started:  
+   
 Since we have code execution within this environment and we know the operation scheduling order from static analysis, we can be sure that our stored payloads will be migrated from our “OldOs” to any “NewOs” OEM directory, thanks to `OpMigrateOemExtensions` and additionally, using a script file or a custom binary with particular arguments, we can also “arbitrarily” migrate from this “NewOS” OEM folder to a “NewOS” reliable directory from where we are sure we can trigger filesystem persistence, thanks to `OpRunExtension` and the `TargetOS` registry value that the environment itself provides us to interact with the to-be recovered OS volume.  
   
 This idea is the first thing that of course seemed plausible when considering the execution done by the described operations of our interest, and maybe also looked way too easy in terms of application, but at the end of my tests, there were a lot of considerations that I had in mind at the end of experiments, which you will see in the next section.
