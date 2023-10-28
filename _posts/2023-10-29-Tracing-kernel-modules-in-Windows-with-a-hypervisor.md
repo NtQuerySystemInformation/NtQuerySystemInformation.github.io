@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Life is beautiful, tracers too :p"
+title: "Tracing kernel modules with a hypervisor."
 ---
 
 T.B.D

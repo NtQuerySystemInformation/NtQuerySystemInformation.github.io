@@ -51,9 +51,11 @@ I have to say the results were very interesting, as you can see by some of the s
   <img src="/assets/images/img2.png">
 </div>
 
+<br>
 <div style="text-align:center;">
   <img src="/assets/images/img3.png">
 </div>
+<br>
 
 <br>
 <div style="text-align:center;">
