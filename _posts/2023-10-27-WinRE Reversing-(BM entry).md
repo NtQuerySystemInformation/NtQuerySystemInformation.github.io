@@ -84,38 +84,38 @@ In this sense, the engine core execution process can be described from this poin
 The reason is the manipulation of an object named `Session`, which members are of huge interest for further understanding how the engine prepares itself for executing the different options available.
 
 {% highlight cpp %}
-	struct Session
-	{
-		CAtlArray m_arrayProperties;
-		BoolProperty m_ConstructCheck; 
-		BoolProperty m_ReadyCheck; 
-		WorkingDirs* m_WorkingDirs; 
-		BYTE bytes_not_relevant_members[64]; //not relevant for current context
-		CString m_TargetDriveLetter;
-		Options* m_Options;
-		SystemInfo* m_SystemInfo; 
-		DWORD m_IndexPhaseExecution; 
-		DWORD GapBytes; 
-		ExecState* m_ExecState; 
-		OperationQueue* m_OperationQueueOfflineOps; //Offline operations
-		OperationQueue* m_OperationQueueOnlineOps; //Online operations
-		BYTE bytes_not_relevant_members2[12]; //not relevant for current context
-	}
+struct Session
+{
+	CAtlArray m_arrayProperties;
+	BoolProperty m_ConstructCheck; 
+	BoolProperty m_ReadyCheck; 
+	WorkingDirs* m_WorkingDirs; 
+	BYTE bytes_not_relevant_members[64]; //not relevant for current context
+	CString m_TargetDriveLetter;
+	Options* m_Options;
+	SystemInfo* m_SystemInfo; 
+	DWORD m_IndexPhaseExecution; 
+	DWORD GapBytes; 
+	ExecState* m_ExecState; 
+	OperationQueue* m_OperationQueueOfflineOps; //Offline operations
+	OperationQueue* m_OperationQueueOnlineOps; //Online operations
+	BYTE bytes_not_relevant_members2[12]; //not relevant for current context
+}
 {% endhighlight %}
 
 The main reason for this is because this object contains a member of type `OperationQueue`, which is basically a typedef of `CAtlArray` for each operation object to be executed, tied to a particular derived `Scenario` type.  
 Such scenarios are initialized thanks to `ResetPrepareSession`, and each of their operations related to it are executed properly with `ResetExecute`.
 
 {% highlight cpp %}
-	struct __cppobj DerivedScenario : Scenario 
-	{
-		void* m_Telemetry;
-		ScenarioType* m_ScenarioType;.
-		void* m_CloudImgObjPtr;
-		void* m_PayloadInfoPtr;
-		Options* m_OptionsObjPtr;
-		SystemInfo* m_SystemInfoPtr;
-	};
+struct __cppobj DerivedScenario : Scenario 
+{
+	void* m_Telemetry;
+	ScenarioType* m_ScenarioType;.
+	void* m_CloudImgObjPtr;
+	void* m_PayloadInfoPtr;
+	Options* m_OptionsObjPtr;
+	SystemInfo* m_SystemInfoPtr;
+};
 {% endhighlight %}
 
 Describing further the functionality inside `ResetPrepareSession`, the method `Session::Construct` stands out by calling `Scenario::Create` and `Scenario::Initialize`, these methods will create a different derived `Scenario` object, where there is a maximum of 13 types, being the one that matters the most to us, `ResetScenario`.  
@@ -125,20 +125,20 @@ Most derived scenarios have the same size, however, for the bare metal scenario 
 On the other hand, the Operation objects are queued to the `OperationQueue` thanks to the internal method per derived scenario type: `InternalConstruct`. It is important the results are applied for online and offline operations. This method is also in charge of initializing the `ExecState` object, which will see later on how it is relevant for our reverse engineering effort.
 
 {% highlight cpp %}
-	dwResult = OperationQueue::Create(OperationQueueOffline); 
-	if ( dwResult >= 0 ){
-		dwResult = OperationQueue::Create(OperationQueueOnline); 
-	if ( dwResult >= 0 ){
-			vtableDerivedScenario = DerivedScenarioObj->vTableScenario; //Overridden by derived type.
-			dwResult = vtableDerivedScenario->InternalConstruct(DerivedScenarioObj, ExecStatePtr, OperationQueueOffline,  OperationQueueOnline);
-			if ( dwResult >= 0 ){
-				 *OperationQueueOfflineOperations = OperationQueueOffline;
-				 *OperationQueueOnlineOperations = OperationQueueOnline;
-			}
+dwResult = OperationQueue::Create(OperationQueueOffline); 
+if ( dwResult >= 0 ){
+	dwResult = OperationQueue::Create(OperationQueueOnline); 
+if ( dwResult >= 0 ){
+		vtableDerivedScenario = DerivedScenarioObj->vTableScenario; //Overridden by derived type.
+		dwResult = vtableDerivedScenario->InternalConstruct(DerivedScenarioObj, ExecStatePtr, OperationQueueOffline,  OperationQueueOnline);
+		if ( dwResult >= 0 ){
+			 *OperationQueueOfflineOperations = OperationQueueOffline;
+			 *OperationQueueOnlineOperations = OperationQueueOnline;
 		}
 	}
+}
 	
-	//Excerpt: Code snippet per Scenario to build OperationQueue objects inside Scenario::Construct.	
+//Excerpt: Code snippet per Scenario to build OperationQueue objects inside Scenario::Construct.	
 {% endhighlight %}
 
 The `InternalConstruct` method redirects to an internal `DoConstruct` function.   
@@ -146,53 +146,53 @@ Inside of this function, `Operation::Create`, passes a `CStringW` which is highl
 Specifically, once the specific type is found, the derived Operation is built calling `OperationMetadata m_FactoryMethod` member, which is basically a `DerivedOperation` constructor.
 
 {% highlight cpp %}
-	struct OperationMetadata
-	{
-		CString m_OperationTypeID;			          //1.-ATL wchar_t container for operation type ID.
-		void* m_FactoryMethod; 			             //2.-Main method for building derived Operation.
-	};
+struct OperationMetadata
+{
+	CString m_OperationTypeID;			          //1.-ATL wchar_t container for operation type ID.
+	void* m_FactoryMethod; 			             //2.-Main method for building derived Operation.
+};
 
-	OpNode = CAtlMap<CStringW,OperationMetadata>::GetNode(m_OperationTypeIdArg, &iBinArg,&nHashArg,&prevNode);
-	OpMetadataObj = &OpNode->m_value;			     //Finding node from input Operation ID name.
-	FactoryMethod = OpMetadataObj->m_FactoryMethod;
-	DerivedOpObjPtr = FactoryMethod(); 		         //Calling factory method for derived Operation
-	*DerivedOperationObjPtr = DerivedOpObjPtr;
-	
-	//Excerpt: Code snippet to build derived operation objects inside Operation::Create, using Factory method.
+OpNode = CAtlMap<CStringW,OperationMetadata>::GetNode(m_OperationTypeIdArg, &iBinArg,&nHashArg,&prevNode);
+OpMetadataObj = &OpNode->m_value;			     //Finding node from input Operation ID name.
+FactoryMethod = OpMetadataObj->m_FactoryMethod;
+DerivedOpObjPtr = FactoryMethod(); 		         //Calling factory method for derived Operation
+*DerivedOperationObjPtr = DerivedOpObjPtr;
+
+//Excerpt: Code snippet to build derived operation objects inside Operation::Create, using Factory method.
 {% endhighlight %}
 
 Additionally, just like with the `Scenario` class, the derived Operation object also replaces its base Operation vtable for executing specific functionalities to the operation.  
 Below you can see the base Operation structure for each possible operation to be executed.
 
 {% highlight cpp %}
-	struct Operation 			   //Base operation class/struct.
-	{
-		  VtableOperation *VtableOperation; //Replaced by derived type.
-		  CAtlArray m_ArrayProperties; 
-		  CString m_OperationName; 
-		  BoolProperty m_ExecutedProperty;
-		  Session* m_SessionObjPtr;
-		  void* m_TelemetryObjPtr;
-	};
+struct Operation 			   //Base operation class/struct.
+{
+	  VtableOperation *VtableOperation; //Replaced by derived type.
+	  CAtlArray m_ArrayProperties; 
+	  CString m_OperationName; 
+	  BoolProperty m_ExecutedProperty;
+	  Session* m_SessionObjPtr;
+	  void* m_TelemetryObjPtr;
+};
 {% endhighlight %}
 
 Regarding ResetExecute, the internal function `Session::ExecuteOffline` redirects to `Executer::Execute`, which eventually leads to each queued derived operation’s `InternalExecute` method.
 
 {% highlight cpp %}
-	PushButtonReset::Logging::Trace(0, L"Operation validity check passed, will execute");
-	DerivedOpObj->m_SessionObj = SessionObjCommands;
-	DerivedOpObj->m_TelemetryObjPtr = TelemetryObjPtr;
-	dwResult = (DerivedOpObj->VtableOperation->InternalExecute)(DerivedOpObj, ExecStateObjPtr, ArgObject);
-	DerivedOpObj->m_SessionObj = 0i64;
-	DerivedOpObj->m_TelemetryObjPtr = 0i64;
-	if( dwResult >= 0 ) {
-			DerivedOperation->m_ExecutedProperty.bCheck = 1;
-	} else{
-		Logging::TraceErr(2i64, dwResult, "PushButtonReset::Operation::Execute", "base\\reset\\engine\\exec\\src\\operation.cpp", 580, L"Internal failure in subtype execution routine");
-	}
-	
-	//Excerpt: Code snippet showing InternalExecute per derived Operation inside Executer::Execute 
-	//(Notice how the members mainly passed as arguments to InternalExecute come from the base Operation type)
+PushButtonReset::Logging::Trace(0, L"Operation validity check passed, will execute");
+DerivedOpObj->m_SessionObj = SessionObjCommands;
+DerivedOpObj->m_TelemetryObjPtr = TelemetryObjPtr;
+dwResult = (DerivedOpObj->VtableOperation->InternalExecute)(DerivedOpObj, ExecStateObjPtr, ArgObject);
+DerivedOpObj->m_SessionObj = 0i64;
+DerivedOpObj->m_TelemetryObjPtr = 0i64;
+if( dwResult >= 0 ) {
+		DerivedOperation->m_ExecutedProperty.bCheck = 1;
+} else{
+	Logging::TraceErr(2i64, dwResult, "PushButtonReset::Operation::Execute", "base\\reset\\engine\\exec\\src\\operation.cpp", 580, L"Internal failure in subtype execution routine");
+}
+
+//Excerpt: Code snippet showing InternalExecute per derived Operation inside Executer::Execute 
+//(Notice how the members mainly passed as arguments to InternalExecute come from the base Operation type)
 {% endhighlight %}
 
 While there is other functions besides the ones just mentioned that are also involved in this process, I consider important to add only that there will also be a call to `Operation::ApplyEffects` after this code snippet, which basically executes the derived operation’s `InternalApply` method that may contain important initializations that will be used in the entire execution process, as it will be seen below.  
@@ -206,15 +206,15 @@ Talking more specifically about these members mentioned, it can be pointed out t
 However, at a certain point of execution all these members are set/used after the execution of one of the operations queued, specifically `OpExecSetup`, when the `InternalApply` method is called in the scheduled execution, as shown below.
 
 {% highlight cpp %}
-	if (!ExecState->m_HaveOldOs.bCheck) //path mostly taken.
-	{ 
-		ATL::CStringW(&OldWindowsDir, L"Windows.old"); 
-		Path::Combine(m_TargetVolumeRoot, &OldWindowsDir, &ExecStateObj->m_OldOSRoot.CStringPath);
-	}
-	ExecStateObj->m_HaveNewOS.bCheck = 1; 
-	CStringW::operator=(&ExecState->m_NewOSRoot.CStringPath,&m_TargetVolumeRoot);
-	
-	//Excerpt: Setting up m_NewOsRoot and m_OldOsRoot after OpExecSetup InternalApply execution.
+if (!ExecState->m_HaveOldOs.bCheck) //path mostly taken.
+{ 
+	ATL::CStringW(&OldWindowsDir, L"Windows.old"); 
+	Path::Combine(m_TargetVolumeRoot, &OldWindowsDir, &ExecStateObj->m_OldOSRoot.CStringPath);
+}
+ExecStateObj->m_HaveNewOS.bCheck = 1; 
+CStringW::operator=(&ExecState->m_NewOSRoot.CStringPath,&m_TargetVolumeRoot);
+
+//Excerpt: Setting up m_NewOsRoot and m_OldOsRoot after OpExecSetup InternalApply execution.
 {% endhighlight %}
 
 **This raises the question: Why specifically this Windows.old subdirectory is set up for the m_OldOsRoot member?**
@@ -289,55 +289,55 @@ Because of this, I focused instead on operations related to migration, such as `
 At this point, we can say code speaks more than words, the optimized code snippet is shown below:  
 
 {% highlight cpp %}
-	Path::Combine(&ExecState->m_OldOSRoot.CStringPath, L"Recovery", &OldOsRecoveryPath); //Creating Recovery folder path with Old Os argument
-	Path::Combine(&ExecState->m_NewOSRoot.CStringPath, L"Recovery", &NewOsRecoveryPath); //Creating Recovery folder path with New Os argument.
-	if (!Directory::Exists(&NewOsRecoveryPath))
-	{ 				
-		Logging::Trace(0, L"MigrateOEMExtensions: Creating recovery folder");    
-		(...)
-		Path::AddAttributes(&NewOsRecoveryPath);
-		Directory::CopySecurity(&OldOsRecoveryPath, &NewOsRecoveryPath);   	 
-	}
-	NewOsRoot = &ExecState->m_NewOSRoot.CStringPath;
-	OldOsRoot = &ExecState->m_OldOSRoot.CStringPath;
-	TargetVolRoot = &ExecState->m_TargetVolumeRoot.CStringPath;
-	PbrMigrateOEMProvPackages(TargetVolRoot, OldOsRoot, NewOsRoot); //Moving packages files.
-	PbrMigrateOEMScripts(TargetVolRoot, OldOsRoot, NewOsRoot); //Moving scripts, core target function.
-	PbrMigrateOEMAutoApply(TargetVolRoot, OldOsRoot, NewOsRoot); //Moving autoapply files.
+Path::Combine(&ExecState->m_OldOSRoot.CStringPath, L"Recovery", &OldOsRecoveryPath); //Creating Recovery folder path with Old Os argument
+Path::Combine(&ExecState->m_NewOSRoot.CStringPath, L"Recovery", &NewOsRecoveryPath); //Creating Recovery folder path with New Os argument.
+if (!Directory::Exists(&NewOsRecoveryPath))
+{ 				
+	Logging::Trace(0, L"MigrateOEMExtensions: Creating recovery folder");    
+	(...)
+	Path::AddAttributes(&NewOsRecoveryPath);
+	Directory::CopySecurity(&OldOsRecoveryPath, &NewOsRecoveryPath);   	 
+}
+NewOsRoot = &ExecState->m_NewOSRoot.CStringPath;
+OldOsRoot = &ExecState->m_OldOSRoot.CStringPath;
+TargetVolRoot = &ExecState->m_TargetVolumeRoot.CStringPath;
+PbrMigrateOEMProvPackages(TargetVolRoot, OldOsRoot, NewOsRoot); //Moving packages files.
+PbrMigrateOEMScripts(TargetVolRoot, OldOsRoot, NewOsRoot); //Moving scripts, core target function.
+PbrMigrateOEMAutoApply(TargetVolRoot, OldOsRoot, NewOsRoot); //Moving autoapply files.
 {% endhighlight %}
 
 From all the functions that may be interesting, the one that interests me the most to cover is `PbrMigrateOEMScripts`. You might be asking why? It is pretty simple, this is the function that basically is in charge of moving files inside the `<DriveLetter>:\Recovery\OEM` folder from `OldOs (Windows.Old folder)`, to the `newOs (<DriveLetter>)`.
 
 {% highlight cpp %}
-	Path::Combine(m_OldOsRoot, L"Recovery\\OEM", &OldRecOemPath);
-	Path::Combine(m_NewOsRoot,  L"Recovery\\OEM", &NewRecOemPath);
-	Logging::Trace(0, L"MigrateOEMExtensions: Migrating OEM scripts from [%s] to [%s]", OldRecOemPath.m_pchData, NewRecOemPath.m_pchData);
-	if (Directory::Exists(&OldRecOemPath) && !Directory::Exists(&NewRecOemPath)) 
-	{
-		//(...)
-		Directory::Move(&OldRecOemPath, &NewRecOemPath, 1u); 
-	}
-	
-	//Excerpt: Optimized PbrMigrateOEMScripts snippet to move entire directory from old to new OS (with Directory::Move)
+Path::Combine(m_OldOsRoot, L"Recovery\\OEM", &OldRecOemPath);
+Path::Combine(m_NewOsRoot,  L"Recovery\\OEM", &NewRecOemPath);
+Logging::Trace(0, L"MigrateOEMExtensions: Migrating OEM scripts from [%s] to [%s]", OldRecOemPath.m_pchData, NewRecOemPath.m_pchData);
+if (Directory::Exists(&OldRecOemPath) && !Directory::Exists(&NewRecOemPath)) 
+{
+	//(...)
+	Directory::Move(&OldRecOemPath, &NewRecOemPath, 1u); 
+}
+
+//Excerpt: Optimized PbrMigrateOEMScripts snippet to move entire directory from old to new OS (with Directory::Move)
 {% endhighlight %}
 
 {% highlight cpp %}
-	Path::GetDirectory(NewOsRecoveryOemPath, &ParentDirRecovery);
-	if ( Directory::Exists(&ParentDirRecovery))
-	{
-			Path::GetShortName(OldOsRecoveryOemPath, &ShortNameRecOemPath);
-				Path::GetCanonical(OldOsRecoveryOemPath, &CanonicalRecOemPathOld);
-			Path::GetCanonical(NewOsRecoveryOemPath, &CanonicalRecOemPathNew);
-			dwFlags = !argFlag; 
-			if( MoveFileExW(CanonicalRecOemPathOld, CanonicalRecOemPathNew, dwFlags))
-			{
-				if (ADJ(ShortNameRecOemPath.m_pchData)->nDataLength > 0) {
-					Path::SetShortName(NewOsRecoveryOemPath, &ShortNameRecOemPath);
-			}
+Path::GetDirectory(NewOsRecoveryOemPath, &ParentDirRecovery);
+if ( Directory::Exists(&ParentDirRecovery))
+{
+		Path::GetShortName(OldOsRecoveryOemPath, &ShortNameRecOemPath);
+			Path::GetCanonical(OldOsRecoveryOemPath, &CanonicalRecOemPathOld);
+		Path::GetCanonical(NewOsRecoveryOemPath, &CanonicalRecOemPathNew);
+		dwFlags = !argFlag; 
+		if( MoveFileExW(CanonicalRecOemPathOld, CanonicalRecOemPathNew, dwFlags))
+		{
+			if (ADJ(ShortNameRecOemPath.m_pchData)->nDataLength > 0) {
+				Path::SetShortName(NewOsRecoveryOemPath, &ShortNameRecOemPath);
 		}
 	}
-	
-	//Excerpt: Optimized Directory::Move snippet related to moving subdirectories and files.
+}
+
+//Excerpt: Optimized Directory::Move snippet related to moving subdirectories and files.
 {% endhighlight %}
 
 This code effectively shows how the engine itself moves arbitrary files from the `“OldOS” (Windows.Old)` to the `“NewOS” (<DriveLetter>)`, as long as they are inside this folder: `Recovery\OEM`.
@@ -346,19 +346,19 @@ This however is not enough for achieving any sort of code execution to the targe
 This is where an additional Operation in the queue can be chained together for exactly this purpose: `OpRunExtension`.
 
 {% highlight cpp %}
-	struct __cppobj OpRunExtension : Operation
-	{
-		BoolProperty m_IsRequired;
-		StringProperty m_PhaseExecution;
-		PathProperty m_ExtensibilityDir;
-		StringProperty m_CommandPath;
-		StringProperty m_Arguments;
-		IntProperty m_Duration;
-		IntProperty m_Timeout;
-		PathProperty m_RecoveryImageLocation;
-		BoolProperty m_WipeDataCheck;
-		BoolProperty m_PartitionDiskCheck;
-	};
+struct __cppobj OpRunExtension : Operation
+{
+	BoolProperty m_IsRequired;
+	StringProperty m_PhaseExecution;
+	PathProperty m_ExtensibilityDir;
+	StringProperty m_CommandPath;
+	StringProperty m_Arguments;
+	IntProperty m_Duration;
+	IntProperty m_Timeout;
+	PathProperty m_RecoveryImageLocation;
+	BoolProperty m_WipeDataCheck;
+	BoolProperty m_PartitionDiskCheck;
+};
 {% endhighlight %}
 
 To show how exactly it matters to our intention, we have to look out for implementation details inside `OpRunExtension::InternalExecute`.
@@ -367,15 +367,15 @@ Mainly there are functions that are in charge of setting the necessary environme
 The latter is the most important function of this particular derived Operation in our context, but I will describe both
 
 {% highlight cpp %}
-	OpRunExtension::ExecuteCompatWorkarounds(RunExtensionObj);
-	dwCodeError = Path::Combine(&ExecStateObj->m_TargetVolumeRoot.CStringPath, L"Windows", &TargetWinDir);
-	if (dwCodeError >= 0){
-		 OpRunExtension::SetEnvironmentVariables(RunExtensionObj, &TargetWinDir.m_pchData);
-		 OpRunExtension::RunCommand(RunExtensionObj);
-		 (...)
-	}
-	
-	//Excerpt: Optimized OpRunExtension::InternalExecute understanding the overall execution flow.
+OpRunExtension::ExecuteCompatWorkarounds(RunExtensionObj);
+dwCodeError = Path::Combine(&ExecStateObj->m_TargetVolumeRoot.CStringPath, L"Windows", &TargetWinDir);
+if (dwCodeError >= 0){
+	 OpRunExtension::SetEnvironmentVariables(RunExtensionObj, &TargetWinDir.m_pchData);
+	 OpRunExtension::RunCommand(RunExtensionObj);
+	 (...)
+}
+
+//Excerpt: Optimized OpRunExtension::InternalExecute understanding the overall execution flow.
 {% endhighlight %}
 
 First, `OpRunExtension::SetEnvironmentalVariables` is not too important, but it’s core functionality is manipulating different registry values under `HKLM\SOFTWARE\Microsoft\RecoveryEnvironment`.
@@ -387,30 +387,30 @@ For this aspect, we have to explain particular things related to the `OpRunExten
 During the execution of `ResetScenario’s DoConstruct/InternalConstruct methods`, there are particular members that are initialized here, and most of them come from an object labeled as `“Extensibility”`
 
 {% highlight cpp %}
-	if ( Extensibility::HasCommandFor(ExtensibilityObjectPtr, 3u) //Reset End phase checks.
-	{
-		   Logging::Trace(0, L"Reset: OEM extension is available for ResetEnd");
-		   Extensibility::GetCommand(ExtensibilityObjPointer, 3u, &ExtensibilityDir, &ScriptPath, &Arguments, &dwSeconds);
-		   ArgsString = PayloadInfo::GetImage(&Arguments);
-		   ScriptPath = PayloadInfo::GetImage(&ScriptPath);
-		   OemFolderPath = PayloadInfo::GetImage(&ExtensibilityDir);
-		   Logging::Trace(0, L"Reset: OEM extension command defined in [%s] for phase 2 is [%s] [%s] ([%u] seconds)", OemFolderPath, ScriptPath, ArgsString, (DWORD)dwSeconds);
-		   ATL::CStringW(&OperationNameStr, L"RunExtension");
-		   Operation::Create(&OperationNameStr, OpRunExtensionObjPtr);
-		   BoolProperty::operator=(&OpRunExtensionObjPtr->m_IsRequired, 0i64);
-		   ATL::CStringW(&m_PhaseExec, L"ResetEnd");
-		   PathProperty::operator=(&OpRunExtensionObjPtr->m_PhaseExecution, &m_PhaseExec);
-		   PathProperty::operator=(&OpRunExtensionObjPtr->m_ExtensibilityDir, &ExtensibilityDir);
-		   PathProperty::operator=(&OpRunExtensionObjPtr->m_CommandPath, &ScriptPath);
-		   PathProperty::operator=(&OpRunExtensionObjPtr->m_Arguments, &Arguments);
-		   IntProperty::operator=(&OpRunExtensionObjPtr->m_Duration, dwDurationSeconds);
-		   IntProperty::operator=(&OpRunExtensionObjPtr->m_Timeout, 3600);
-		   BoolProperty::operator=(&OpRunExtensionObjPtr->m_WipeDataCheck, 0i64);
-		   BoolProperty::operator=(&OpRunExtensionObjPtr->m_PartitionDiskCheck, 0i64);
-		   OperationQueue::Enqueue(OperationQueueOffline, OpRunExtensionObjPtr);
-	}
-	
-	//Excerpt: Optimized ResetScenario::DoConstruct snippet to understand OpRunExtension member initialization.
+if ( Extensibility::HasCommandFor(ExtensibilityObjectPtr, 3u) //Reset End phase checks.
+{
+	   Logging::Trace(0, L"Reset: OEM extension is available for ResetEnd");
+	   Extensibility::GetCommand(ExtensibilityObjPointer, 3u, &ExtensibilityDir, &ScriptPath, &Arguments, &dwSeconds);
+	   ArgsString = PayloadInfo::GetImage(&Arguments);
+	   ScriptPath = PayloadInfo::GetImage(&ScriptPath);
+	   OemFolderPath = PayloadInfo::GetImage(&ExtensibilityDir);
+	   Logging::Trace(0, L"Reset: OEM extension command defined in [%s] for phase 2 is [%s] [%s] ([%u] seconds)", OemFolderPath, ScriptPath, ArgsString, (DWORD)dwSeconds);
+	   ATL::CStringW(&OperationNameStr, L"RunExtension");
+	   Operation::Create(&OperationNameStr, OpRunExtensionObjPtr);
+	   BoolProperty::operator=(&OpRunExtensionObjPtr->m_IsRequired, 0i64);
+	   ATL::CStringW(&m_PhaseExec, L"ResetEnd");
+	   PathProperty::operator=(&OpRunExtensionObjPtr->m_PhaseExecution, &m_PhaseExec);
+	   PathProperty::operator=(&OpRunExtensionObjPtr->m_ExtensibilityDir, &ExtensibilityDir);
+	   PathProperty::operator=(&OpRunExtensionObjPtr->m_CommandPath, &ScriptPath);
+	   PathProperty::operator=(&OpRunExtensionObjPtr->m_Arguments, &Arguments);
+	   IntProperty::operator=(&OpRunExtensionObjPtr->m_Duration, dwDurationSeconds);
+	   IntProperty::operator=(&OpRunExtensionObjPtr->m_Timeout, 3600);
+	   BoolProperty::operator=(&OpRunExtensionObjPtr->m_WipeDataCheck, 0i64);
+	   BoolProperty::operator=(&OpRunExtensionObjPtr->m_PartitionDiskCheck, 0i64);
+	   OperationQueue::Enqueue(OperationQueueOffline, OpRunExtensionObjPtr);
+}
+
+//Excerpt: Optimized ResetScenario::DoConstruct snippet to understand OpRunExtension member initialization.
 {% endhighlight %}
 
 To explain how this Extensibility object is initialized, we need to focus on the proper method used for this precise purpose and the members of classes involved in it.
@@ -419,13 +419,13 @@ The answer to this is simple, and it is basically inside `ResetScenario::Interna
 This is basically the path to `ResetConfig.xml`, which has to be stored in the `Recovery\OEM` directory from the `“OldOs”`.
 
 {% highlight cpp %}
-	StringInOemExtensibility=CStringW::CloneData(ResetScenarioObj->m_SystemInfoPtr->m_TargetOEMResetConfigPath.CString.m_pchData);
-	if ( StringInOemExtensibility->nDataLength > 0 ){
-		Logging::Trace(0, L"Reset: Loading OEM extensions");
-		Extensibility::Load(&StringInOemExtensibility, ExtensibilityObj);
-		//(...)
-	}
-	//Excerpt: Optimized ResetScenario::InternalConstruct snippet, which shows the usage of the SystemInfo member, used for referring to the ResetConfig.xml path inside Extensibility::Load.
+StringInOemExtensibility=CStringW::CloneData(ResetScenarioObj->m_SystemInfoPtr->m_TargetOEMResetConfigPath.CString.m_pchData);
+if ( StringInOemExtensibility->nDataLength > 0 ){
+	Logging::Trace(0, L"Reset: Loading OEM extensions");
+	Extensibility::Load(&StringInOemExtensibility, ExtensibilityObj);
+	//(...)
+}
+//Excerpt: Optimized ResetScenario::InternalConstruct snippet, which shows the usage of the SystemInfo member, used for referring to the ResetConfig.xml path inside Extensibility::Load.
 {% endhighlight %}
 
 If we focus on this `ResetConfig.xml` file path and how it is used, we can say that reverse engineering the XML parsing itself is not particularly interesting, but in a brief description it can be said that this `Extensibility` object using the method `Extensibility::ParseCommand` with `XmlNode::GetAttribute` and `XmlNode::GetChildText`, checks for values that are documented here.  
@@ -438,51 +438,50 @@ However, while we know how to set up the environmental aspects of our payload so
 To answer this, after explaining some of the workings around the setup for core objects related to `OpRunExtension`, we have to return again to the `RunCommand` method, which builds a command line string with arguments.
 
 {% highlight cpp %}
-	PbrMountScriptDirectory(&this->m_ExtensibilityDir.CStringPath, &ScriptDirectory);
-	Logging::Trace(0, L"RunExtension: Resolved script directory [%s] to [%s]",  this->m_ExtensibilityDir.CStringPath.m_pchData, ScriptDirectory.m_pchData);
-	Path::Combine(&ScriptDirectory, &this->m_CommandPath.CStringMember, &ScriptFileCommand);
-	ATL::CStringW::Format(&ScriptFileName, L"%s %s", ScriptFileCommand.m_pchData, this->m_Arguments.CStringMember.m_pchData);
-	Logging::Trace(0, L"RunExtension: About to execute [%s]", ScriptFileName.m_pchData);
-	(...)
-	dwResultCode = Command::Execute(&ScriptFileName, unused_arg, CommandObjPointer);
-	if ( dwResultCode >= 0 ){
-			dwCodeResult = Command::Wait(CommandObjPtr,this->m_Timeout.m_int_for_property);
-			if ( dwCodeResult < 0 ){
-				dwResultCode = 0x800705B4;
-				if ( dwCodeResult == 0x800705B4 ){
-					Logging::Trace(1u, L"RunExtension: The command timed out");
-					Command::Cancel(pCommandObj);
-					//(...)
-					Logging::Trace(1u, L"RunExtension: The command was terminated");
+PbrMountScriptDirectory(&this->m_ExtensibilityDir.CStringPath, &ScriptDirectory);
+Logging::Trace(0, L"RunExtension: Resolved script directory [%s] to [%s]",  this->m_ExtensibilityDir.CStringPath.m_pchData, ScriptDirectory.m_pchData);
+Path::Combine(&ScriptDirectory, &this->m_CommandPath.CStringMember, &ScriptFileCommand);
+ATL::CStringW::Format(&ScriptFileName, L"%s %s", ScriptFileCommand.m_pchData, this->m_Arguments.CStringMember.m_pchData);
+Logging::Trace(0, L"RunExtension: About to execute [%s]", ScriptFileName.m_pchData);
+(...)
+dwResultCode = Command::Execute(&ScriptFileName, unused_arg, CommandObjPointer);
+if ( dwResultCode >= 0 ){
+		dwCodeResult = Command::Wait(CommandObjPtr,this->m_Timeout.m_int_for_property);
+		if ( dwCodeResult < 0 ){
+			dwResultCode = 0x800705B4;
+			if ( dwCodeResult == 0x800705B4 ){
+				Logging::Trace(1u, L"RunExtension: The command timed out");
+				Command::Cancel(pCommandObj);
+				//(...)
+				Logging::Trace(1u, L"RunExtension: The command was terminated");
+			}
+		}
+		else{
+			Logging::Trace(0, L"RunExtension: The command completed");
+			dwErrorCode = 0;
+			dwResultCode = Command::GetExitCode(CommandObj, &dwErrorCode);
+			if (dwResultCode >= 0){
+				if ( dwErrorCode ){
+					Logging::Trace(0, L"RunExtension: The command failed: Exit Code: [%u]", dwErrorCode);
 				}
 			}
-			else{
-				Logging::Trace(0, L"RunExtension: The command completed");
-				dwErrorCode = 0;
-				dwResultCode = Command::GetExitCode(CommandObj, &dwErrorCode);
-				if (dwResultCode >= 0){
-					if ( dwErrorCode ){
-						Logging::Trace(0, L"RunExtension: The command failed: Exit Code: [%u]", dwErrorCode);
-					}
-				}
-			}
-	}
-	
-	//Excerpt: Optimized OpRunExtension::RunCommand for overall execution flow.
+		}
+}	
+//Excerpt: Optimized OpRunExtension::RunCommand for overall execution flow.
 {% endhighlight %}
 
 If we inspect `Command::Execute`, the most important snippet of code that matters for our purposes is the following one:
 
 {% highlight cpp %}
 
-  memset_0(&ProcessInfo, 0, sizeof(ProcessInfo));
-  ProcessInfo.cb = 104;
-  ProcessInfo.dwFlags = 256;
-  ProcessInfo.hStdInput = Input;
-  ProcessInfo.hStdOutput = commandObj;
-  ProcessInfo.hStdError = commandObj;
-  memset(&lpProcessInformation, 0, sizeof(lpProcessInformation));
-  CreateProcessW(0i64, CommandLineOutput->m_pchData, 0i64, 0i64, 1, 0x8000000u, 0i64, 0i64, &ProcessInfo, &lpProcessInformation);
+memset_0(&ProcessInfo, 0, sizeof(ProcessInfo));
+ProcessInfo.cb = 104;
+ProcessInfo.dwFlags = 256;
+ProcessInfo.hStdInput = Input;
+ProcessInfo.hStdOutput = commandObj;
+ProcessInfo.hStdError = commandObj;
+memset(&lpProcessInformation, 0, sizeof(lpProcessInformation));
+CreateProcessW(0i64, CommandLineOutput->m_pchData, 0i64, 0i64, 1, 0x8000000u, 0i64, 0i64, &ProcessInfo, &lpProcessInformation);
 
 {% endhighlight %}
 
