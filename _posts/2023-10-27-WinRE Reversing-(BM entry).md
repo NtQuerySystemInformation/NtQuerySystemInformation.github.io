@@ -426,10 +426,10 @@ This is basically the path to `ResetConfig.xml`, which has to be stored in the `
 {% endhighlight %}
 
 If we focus on this `ResetConfig.xml` file path and how it is used, we can say that reverse engineering the XML parsing itself is not particularly interesting, but in a brief description it can be said that this `Extensibility` object using the method `Extensibility::ParseCommand` with `XmlNode::GetAttribute` and `XmlNode::GetChildText`, checks for values that are documented here.  
-Specially, there is some parsed information regarding `Run/Path` XML elements that will be stored under the `Extensibility` object first member, which is of `CAtlMap<enum RunPhase, struct RunCommand>` type, particularly matching the `enum RunPhase` key and then modifying the proper RunCommand structure with the parsed information from the `XMLNode` object.
+Specially, there is some parsed information regarding `Run/Path` XML elements that will be stored under the `Extensibility` object first member, which is of `CAtlMap<enum RunPhase, struct RunCommand>` type, particularly matching the `enum RunPhase` key and then modifying the proper RunCommand structure with the parsed information from the `XMLNode` object.  
 
 If you wonder what all this means, it is just an overcomplicated way to say that we have to focus on three particular XML elements: `RunPhase, Run and Path`, at their proper execution phase to trigger some possible code execution.  
-For our purpose, we only care for `RunPhase == FactoryReset_AfterImageApply`, which is represented in the implementation as the `enum PhaseEnd` with DWORD value `0x3`.
+For our purpose, we only care for `RunPhase == FactoryReset_AfterImageApply`, which is represented in the implementation as the `enum PhaseEnd` with DWORD value `0x3`.  
 
 However, while we know how to set up the environmental aspects of our payload so the WinRE engine works around it, we still don’t know how exactly the payload will be executed.  
 To answer this, after explaining some of the workings around the setup for core objects related to `OpRunExtension`, we have to return again to the `RunCommand` method, which builds a command line string with arguments.
@@ -485,6 +485,7 @@ If we inspect `Command::Execute`, the most important snippet of code that matter
 
 This is where the brainstorming started:   
 Since we have code execution within this environment and we know the operation scheduling order from static analysis, we can be sure that our stored payloads will be migrated from our “OldOs” to any “NewOs” OEM directory, thanks to `OpMigrateOemExtensions` and additionally, using a script file or a custom binary with particular arguments, we can also “arbitrarily” migrate from this “NewOS” OEM folder to a “NewOS” reliable directory from where we are sure we can trigger filesystem persistence, thanks to `OpRunExtension` and the `TargetOS` registry value that the environment itself provides us to interact with the to-be recovered OS volume.  
+  
 This idea is the first thing that of course seemed plausible when considering the execution done by the described operations of our interest, and maybe also looked way too easy in terms of application, but at the end of my tests, there were a lot of considerations that I had in mind at the end of experiments, which you will see in the next section.
 
 
