@@ -47,9 +47,11 @@ However, at first this looked just like a simple coincidence, so I had to test h
 The easiest way to approach it was using the WinRE command prompt and create a process with some reversed argument parameters from the binaries recovered, specially `sysreset.exe`, which was the one that took my most attention.
 I have to say the results were very interesting, as you can see by some of the screenshots below, which matched with the type of result I was expecting and I was interested in.
 
+<br>
 <div style="text-align:center;">
   <img src="/assets/images/img2.png">
 </div>
+<br>
 
 <br>
 <div style="text-align:center;">
